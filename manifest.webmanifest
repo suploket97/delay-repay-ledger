@@ -1,0 +1,23 @@
+{
+  "name": "Delay Repay Ledger",
+  "short_name": "Delay Ledger",
+  "description": "Log late UK trains, estimate Delay Repay and track your claims.",
+  "lang": "en-GB",
+  "start_url": "./#journeys",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#EEF0EC",
+  "theme_color": "#C9481A",
+  "categories": ["travel", "finance", "productivity"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Log a journey", "short_name": "Log", "url": "./#log-journey", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Operator stats", "short_name": "Stats", "url": "./#stats", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

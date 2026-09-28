@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Delay Repay Ledger</title>
+  <meta name="description" content="A personal notebook for UK train delays: estimate Delay Repay by operator, ticket type, class and Seatfrog upgrade, see where to claim, and track what gets paid.">
+  <meta name="theme-color" content="#EEF0EC" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#11151B" media="(prefers-color-scheme: dark)">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Delay Ledger">
+  <meta property="og:title" content="Delay Repay Ledger">
+  <meta property="og:description" content="Log late trains, estimate Delay Repay and track your claims.">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="css/styles.css">
+  <script>
+    // Apply the saved theme before first paint to avoid a flash.
+    try { var t = localStorage.getItem("drl-theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}
+  </script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 48 36">
+          <path class="bm-stub" d="M6 2h36a4 4 0 0 1 4 4v7a5 5 0 0 0 0 10v7a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4v-7a5 5 0 0 0 0-10V6a4 4 0 0 1 4-4z"/>
+          <line class="bm-perf" x1="33" y1="6" x2="33" y2="30"/>
+          <circle class="bm-face" cx="18" cy="18" r="9"/>
+          <path class="bm-hand" d="M18 12.5V18l4 2.5"/>
+          <circle class="bm-pin" cx="18" cy="18" r="1.3"/>
+          <path class="bm-pound" d="M41 13.5a2.6 2.6 0 0 0-4.6 1.7V22.5M35 18.5h4.2M35 22.5h6"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <h1>Delay Repay Ledger</h1>
+        <p>Your notebook for late trains, estimated compensation and where to claim it</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <span class="save-state" id="saveState"><span class="dot"></span><span id="saveText">Saved on this device</span></span>
+      <button class="icon-btn" id="themeBtn" type="button" aria-label="Change theme" title="Theme">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg>
+        <span id="themeLabel">Auto</span>
+      </button>
+      <button class="icon-btn" id="dataBtn" type="button" aria-haspopup="dialog">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v3h16v-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Backup</span>
+      </button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button role="tab" data-tab="log" aria-selected="true" id="tab-log" aria-controls="view-log">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <span>Journeys</span>
+    </button>
+    <button role="tab" data-tab="add" aria-selected="false" id="tab-add" aria-controls="view-add">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <span><span class="long">Log a journey</span><span class="short">Log</span></span>
+    </button>
+    <button role="tab" data-tab="stats" aria-selected="false" id="tab-stats" aria-controls="view-stats">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V11M12 20V5M19 20v-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+      <span><span class="long">Operator stats</span><span class="short">Stats</span></span>
+    </button>
+    <button role="tab" data-tab="rules" aria-selected="false" id="tab-rules" aria-controls="view-rules">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 12h7M9 16h7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <span><span class="long">Rules &amp; where to claim</span><span class="short">Rules</span></span>
+    </button>
+  </nav>
+
+  <main id="main">
+  <!-- JOURNEYS -->
+  <section id="view-log" role="tabpanel" aria-labelledby="tab-log">
+    <div class="kpis" id="kpis"></div>
+    <div id="sampleBanner" class="banner" hidden>
+      <span><b>Example journeys.</b> These show how the ledger works. They disappear as soon as you log your first real journey.</span>
+      <button class="btn small primary" type="button" data-go="add">Log a journey</button>
+    </div>
+    <div class="toolbar">
+      <input id="q" type="search" placeholder="Search station, operator, reference…" aria-label="Search journeys">
+      <select id="fOp" aria-label="Filter by operator"><option value="">All operators</option></select>
+      <select id="fStatus" aria-label="Filter by status">
+        <option value="">All statuses</option>
+        <option value="todo">To claim</option>
+        <option value="submitted">Submitted</option>
+        <option value="paid">Paid</option>
+        <option value="rejected">Rejected</option>
+        <option value="na">Not eligible</option>
+      </select>
+      <button class="btn primary add-btn" type="button" data-go="add">+ Log a journey</button>
+    </div>
+    <div class="tickets" id="tickets"></div>
+  </section>
+
+  <!-- LOG / EDIT -->
+  <section id="view-add" role="tabpanel" aria-labelledby="tab-add" hidden>
+    <div class="est-mini" id="estMini" aria-hidden="true"></div>
+    <form id="form" class="editor" novalidate>
+      <div class="form-col">
+        <fieldset>
+          <legend>Journey</legend>
+          <div class="grid">
+            <label class="f">Origin station
+              <input id="origin" list="stations" required placeholder="e.g. London King's Cross" autocomplete="off" enterkeyhint="next">
+            </label>
+            <label class="f">Destination station
+              <input id="dest" list="stations" required placeholder="e.g. York" autocomplete="off" enterkeyhint="next">
+            </label>
+            <label class="f">Date of travel
+              <input id="date" type="date" required>
+            </label>
+            <label class="f">Train company that caused the delay
+              <select id="operator" required></select>
+              <span class="hint">On multi-operator trips, pick the one that caused the first delay.</span>
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Route conditions on the ticket</legend>
+          <div class="grid">
+            <label class="f">Route shown on ticket
+              <select id="routeCode">
+                <option>Any Permitted</option>
+                <option>Not via London</option>
+                <option>Via a named station</option>
+                <option>One operator only</option>
+                <option>Booked train only (Advance)</option>
+                <option>Other / see notes</option>
+              </select>
+            </label>
+            <label class="f">Where the train passed (via / calling points)
+              <input id="via" placeholder="e.g. via Peterborough, Doncaster" autocomplete="off">
+              <span class="hint">Useful when a claim is questioned on route validity.</span>
+            </label>
+            <label class="f">Train you booked / intended to catch
+              <input id="service" placeholder="e.g. 08:00 LNER to Edinburgh" autocomplete="off">
+            </label>
+            <label class="f">Bought from
+              <select id="retailer">
+                <option>Train company website/app</option>
+                <option>Trainline</option>
+                <option>Seatfrog</option>
+                <option>Station ticket office / machine</option>
+                <option>Other retailer</option>
+                <option>Contactless / smartcard</option>
+              </select>
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Ticket</legend>
+          <div class="grid">
+            <div class="full class-row">
+              <div class="seg" role="radiogroup" aria-label="Ticket class">
+                <label><input type="radio" name="cls" id="clsStd" value="std" checked><span>Standard</span></label>
+                <label><input type="radio" name="cls" id="clsFirst" value="first"><span>First Class</span></label>
+              </div>
+              <span class="hint">Compensation is a share of what you paid, so a First Class fare pays out more.</span>
+            </div>
+            <label class="f">Ticket type
+              <select id="ticketType"></select>
+            </label>
+            <label class="f">Ticket price paid (£)
+              <input id="price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" required>
+              <span class="hint" id="priceHint">Price after any railcard discount.</span>
+            </label>
+            <label class="f" id="legWrap">Which leg was delayed?
+              <select id="leg"><option value="out">Outward</option><option value="ret">Return</option></select>
+            </label>
+            <label class="check full" id="declassWrap">
+              <input type="checkbox" id="declassified">
+              <span>First Class was unavailable (declassified, missing coach or no seat)</span>
+            </label>
+          </div>
+          <div class="sf-box" id="sfBox">
+            <label class="check"><input type="checkbox" id="seatfrog"><span><b>I upgraded with Seatfrog</b> (First Class upgrade on a Standard ticket)</span></label>
+            <div class="grid sf-fields" id="sfFields" hidden>
+              <label class="f">Upgrade price (£)
+                <input id="sfPrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00">
+                <span class="hint">Exclude the £3 platform fee; it is not refundable.</span>
+              </label>
+              <label class="f">Was the upgrade used?
+                <select id="sfUsed"><option value="yes">Yes, it was scanned and I travelled</option><option value="no">No, I couldn't use it</option></select>
+              </label>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Delay</legend>
+          <div class="grid three">
+            <label class="f">What happened
+              <select id="outcome">
+                <option value="late">I travelled and arrived late</option>
+                <option value="notravel">Train cancelled or delayed, so I didn't travel</option>
+              </select>
+            </label>
+            <label class="f">Scheduled arrival
+              <input id="sched" type="time">
+            </label>
+            <label class="f">Actual arrival
+              <input id="actual" type="time">
+            </label>
+            <label class="f full">Delay at your destination (minutes)
+              <input id="delay" type="number" min="0" step="1" inputmode="numeric" placeholder="Filled from the two times, or type it">
+              <span class="hint">Measured against the timetable for that day, including any published amended timetable.</span>
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Claim tracking</legend>
+          <div class="grid">
+            <label class="f">Status
+              <select id="status">
+                <option value="todo">To claim</option>
+                <option value="submitted">Submitted</option>
+                <option value="paid">Paid</option>
+                <option value="rejected">Rejected</option>
+                <option value="na">Not eligible</option>
+              </select>
+            </label>
+            <label class="f">Claim reference
+              <input id="ref" autocomplete="off" placeholder="e.g. DR-1234567">
+            </label>
+            <label class="f">Amount paid (£)
+              <input id="paid" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Once paid">
+            </label>
+            <label class="f">Paid as
+              <select id="paidAs"><option value="">—</option><option>Bank transfer / card</option><option>PayPal</option><option>Cheque</option><option>Rail voucher / e-voucher</option><option>Charity donation</option></select>
+            </label>
+            <label class="f full">Notes
+              <textarea id="notes" placeholder="Cause given by the operator, missed connection, photos of the ticket kept…"></textarea>
+            </label>
+          </div>
+        </fieldset>
+
+        <div class="form-actions">
+          <div class="row">
+            <button type="submit" class="btn primary" id="saveBtn">Save journey</button>
+            <button type="button" class="btn ghost" id="cancelBtn">Cancel</button>
+          </div>
+          <div class="row" id="delWrap" hidden>
+            <button type="button" class="btn danger" id="delBtn">Delete</button>
+            <button type="button" class="btn danger solid" id="delConfirm" hidden>Confirm delete</button>
+          </div>
+        </div>
+      </div>
+
+      <aside class="estimate" aria-live="polite" aria-label="Estimate">
+        <div class="est-head"><span>Estimate</span><span id="estScheme"></span></div>
+        <div class="est-body" id="estBody"></div>
+      </aside>
+    </form>
+  </section>
+
+  <!-- STATS -->
+  <section id="view-stats" role="tabpanel" aria-labelledby="tab-stats" hidden>
+    <div class="kpis" id="kpis2"></div>
+    <div class="two">
+      <div class="panel chart">
+        <h2>Money by operator</h2>
+        <p class="desc">Estimated compensation against what was actually paid.</p>
+        <div id="moneyChart"></div>
+        <div class="legend"><span><i class="sw-est"></i>Estimated</span><span><i class="sw-paid"></i>Paid</span></div>
+      </div>
+      <div class="panel chart">
+        <h2>How late were the trains?</h2>
+        <p class="desc">Delayed journeys by Delay Repay band.</p>
+        <div id="bandChart"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Operator scorecard</h2>
+      <p class="desc">Built only from the journeys you log, so it reflects your own travel.</p>
+      <div class="tbl-wrap"><table id="opTable" class="scorecard"></table></div>
+    </div>
+  </section>
+
+  <!-- RULES -->
+  <section id="view-rules" role="tabpanel" aria-labelledby="tab-rules" hidden>
+    <div class="guide">
+      <div class="panel">
+        <h2>How the estimate works</h2>
+        <ul>
+          <li>Delay is how late you <b>arrived at your destination</b>, not how late the train left.</li>
+          <li>Claim from the company whose train caused the <b>first delay</b>, even if you bought through Trainline or another retailer.</li>
+          <li>Single: 25% / 50% / 100% / 100% of the fare for 15, 30, 60 and 120+ minutes. Return (one leg late): 12.5% / 25% / 50% / 100% of the return fare.</li>
+          <li>Season tickets: one journey is 1/10 of a weekly, 1/40 of a monthly, 1/120 of a quarterly or 1/464 of an annual; doubled at 120+ minutes.</li>
+          <li>Most operators want the claim within <b>28 days</b> of travel. Keep a photo of the ticket.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h2>First Class and Seatfrog</h2>
+        <ul>
+          <li>The percentage is the same in both classes; it applies to the higher First Class fare, so the payout is larger.</li>
+          <li>If First Class wasn't available, ask the operator separately for the difference between First and Standard fares.</li>
+          <li>Seatfrog upgrades qualify for Delay Repay. Claim from the train company, not Seatfrog, and attach the upgrade confirmation. The £3 platform fee is never refunded.</li>
+          <li>Upgrade not scanned because the train was cancelled? Ask Seatfrog for a refund of the unused upgrade instead.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h2>Didn't travel?</h2>
+        <ul>
+          <li>That's a refund, not Delay Repay. Ask the retailer that sold the ticket.</li>
+          <li>Since 1 April 2026, refunds for unused walk-up tickets normally have to be asked for by 23:59 the day before the ticket is valid, but disruption is an exception.</li>
+          <li>If you took a later train and arrived late, that is Delay Repay.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Operators and where to claim</h2>
+      <p class="desc">Thresholds last checked against published operator pages in 2026. Rules change, so open the operator's page before you claim.</p>
+      <div class="tbl-wrap"><table id="rulesTable" class="rules"></table></div>
+    </div>
+  </section>
+  </main>
+
+  <footer>
+    This is a personal note-taking tool. It estimates compensation from published scheme rules and does not submit claims.
+    Operators make the final decision; split tickets, rovers, pay-as-you-go and carnets can be worked out differently.
+    Your journeys are stored only on this device, in this browser.
+  </footer>
+</div>
+
+<dialog id="dataDialog" aria-labelledby="dataTitle">
+  <form method="dialog" class="dlg">
+    <div class="dlg-head">
+      <h2 id="dataTitle">Backup &amp; data</h2>
+      <button class="icon-btn" value="close" aria-label="Close">✕</button>
+    </div>
+    <p class="desc">Journeys are saved in this browser only. Download a backup now and then, and use it to move your ledger to another phone or computer.</p>
+    <div class="dlg-actions">
+      <button type="button" class="btn" id="exportJson">Download backup (.json)</button>
+      <button type="button" class="btn" id="exportCsv">Export for spreadsheets (.csv)</button>
+      <label class="btn" for="importFile">Restore from backup…</label>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+    </div>
+    <div class="danger-zone">
+      <div>
+        <b>Delete all journeys</b>
+        <p class="note">Removes every journey from this browser. This can't be undone.</p>
+      </div>
+      <div class="row">
+        <button type="button" class="btn danger" id="wipeBtn">Delete all</button>
+        <button type="button" class="btn danger solid" id="wipeConfirm" hidden>Yes, delete everything</button>
+      </div>
+    </div>
+    <p class="note" id="storageNote"></p>
+  </form>
+</dialog>
+
+<datalist id="stations"></datalist>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="js/data.js"></script>
+<script src="js/calc.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
